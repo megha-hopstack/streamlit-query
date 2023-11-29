@@ -21,6 +21,7 @@ logging.basicConfig(
     filename='app.log',  # Specify the log file name
     level=logging.INFO  # Set the logging level (INFO, WARNING, ERROR, etc.)
 )
+
 openai.api_key  = st.secrets['OPENAI_API_KEY']
 
 session = boto3.Session(
