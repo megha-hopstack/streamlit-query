@@ -6,7 +6,6 @@ Created on Tue Nov 28 15:23:37 2023
 @author: megha
 """
 
-import os
 import openai
 import boto3
 from pymongo import MongoClient
@@ -17,19 +16,16 @@ from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 import streamlit as st
 import logging
-from dotenv import load_dotenv, find_dotenv
-
-_ = load_dotenv(find_dotenv()) # read local .env file
 
 logging.basicConfig(
     filename='app.log',  # Specify the log file name
     level=logging.INFO  # Set the logging level (INFO, WARNING, ERROR, etc.)
 )
-openai.api_key  = os.environ['OPENAI_API_KEY']
+openai.api_key  = st.secrets['OPENAI_API_KEY']
 
 session = boto3.Session(
-    aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
-    aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY']
+    aws_access_key_id=st.secrets['AWS_ACCESS_KEY_ID'],
+    aws_secret_access_key=st.secrets['AWS_SECRET_ACCESS_KEY']
 )
 
 def get_completion_from_messages(messages, 
