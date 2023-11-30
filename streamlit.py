@@ -20,6 +20,8 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.oauth2.credentials import Credentials
 import logging
+import json
+import tempfile
 
 logging.basicConfig(
     filename='app.log',  # Specify the log file name
@@ -30,13 +32,20 @@ SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
 def authenticate_google_drive():
     creds = None
-    # The file token.json stores the user's access and refresh tokens.
-    token_info = st.secrets['google_token']['installed']
-    creds = Credentials.from_authorized_user_file(token_info, SCOPES)
-    # If there are no (valid) credentials available, prompt the user to log in.
+    token_info = dict(st.secrets['google_token']['installed'])  # Convert AttrDict to a regular dictionary
+
+    # Save the token info to a temporary file
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
+        json.dump(token_info, temp_file)
+        temp_file_path = temp_file.name
+    
+    # Use the temporary file in the credentials method
+    creds = Credentials.from_authorized_user_file(temp_file_path, SCOPES)
+
     if not creds or not creds.valid:
-        # Code to handle authentication...
+        # Code to handle re-authentication...
         pass
+
     return creds
 
 def upload_file_to_drive(filename, folder_id, drive_service):
