@@ -7,6 +7,7 @@ Created on Tue Nov 28 15:23:37 2023
 """
 
 import openai
+import os
 import boto3
 from pymongo import MongoClient
 import pandas as pd
@@ -15,12 +16,36 @@ from io import StringIO
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 import streamlit as st
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+from google.oauth2.credentials import Credentials
 import logging
+import json
 
 logging.basicConfig(
     filename='app.log',  # Specify the log file name
     level=logging.INFO  # Set the logging level (INFO, WARNING, ERROR, etc.)
 )
+
+SCOPES = ['https://www.googleapis.com/auth/drive.file']
+
+def authenticate_google_drive():
+    creds = None
+    token_info = st.secrets["google_token"]
+    token_dict = json.loads(token_info)  
+    creds = Credentials.from_authorized_user_file(token_dict, SCOPES)
+
+def upload_file_to_drive(filename, folder_id, drive_service):
+    file_metadata = {
+        'name': filename,
+        'parents': [folder_id]  # Specify the folder ID
+    }
+    media = MediaFileUpload(filename, mimetype='text/plain')
+    file = drive_service.files().create(body=file_metadata,
+                                        media_body=media,
+                                        fields='id').execute()
+
+    
 
 openai.api_key  = st.secrets['OPENAI_API_KEY']
 
@@ -496,6 +521,9 @@ def process_user_message(user_input, debug=True):
     return output_value
 
 
+creds = authenticate_google_drive()
+drive_service = build('drive', 'v3', credentials=creds)
+
 question_input = st.text_input("Question:")
 logging.info(f"Question: {question_input}")
 
@@ -503,8 +531,11 @@ logging.info(f"Question: {question_input}")
 if question_input:
         response = process_user_message(question_input)
 else:
-    # Set a default message or leave it empty
     response = ""
+    
+folder_id = '1aj2VjXTW_Tv2eti38HgjIUkc7PQQmQSw'
+upload_file_to_drive('app.log', folder_id, drive_service)
+
 
 
 st.text_area("Answer:", response, height=300)

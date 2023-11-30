@@ -4,3 +4,5 @@ pysqlite3-binary
 pandas==1.5.3
 boto3
 pymongo
+google-auth
+google-api-python-client
