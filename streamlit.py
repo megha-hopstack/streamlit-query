@@ -32,8 +32,7 @@ SCOPES = ['https://www.googleapis.com/auth/drive.file']
 def authenticate_google_drive():
     creds = None
     token_info = st.secrets["installed"]
-    token_dict = json.loads(token_info)  
-    creds = Credentials.from_authorized_user_file(token_dict, SCOPES)
+    creds = Credentials.from_authorized_user_file(token_info, SCOPES)
 
 def upload_file_to_drive(filename, folder_id, drive_service):
     file_metadata = {
