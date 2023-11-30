@@ -21,6 +21,7 @@ from googleapiclient.http import MediaFileUpload
 from google.oauth2.credentials import Credentials
 import logging
 import json
+import tempfile
 
 logging.basicConfig(
     filename='app.log',  # Specify the log file name
@@ -32,7 +33,16 @@ SCOPES = ['https://www.googleapis.com/auth/drive.file']
 def authenticate_google_drive():
     creds = None
     token_info = st.secrets["google_token"]["installed"]
-    creds = Credentials.from_authorized_user_file(token_info, SCOPES)
+    
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
+       json.dump(token_info, temp_file)
+       temp_file_path = temp_file.name
+   
+   # Use the temporary file in the credentials method
+    creds = Credentials.from_authorized_user_file(temp_file_path, SCOPES)
+
+   # Optional: delete the temporary file if you want
+    os.remove(temp_file_path)
 
 def upload_file_to_drive(filename, folder_id, drive_service):
     file_metadata = {
