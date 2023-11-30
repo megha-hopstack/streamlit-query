@@ -18,34 +18,24 @@ from datetime import datetime, timedelta
 import streamlit as st
 import logging
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.auth.transport.requests import Request
-
+import json
 
 logging.basicConfig(
     filename='app.log',  # Specify the log file name
     level=logging.INFO  # Set the logging level (INFO, WARNING, ERROR, etc.)
 )
 
-# Function to authenticate and create a Drive service
+
 def create_drive_service():
-    creds_json = st.secrets["google_token"]["installed"]
-    creds = None
+    creds_json = json.loads(st.secrets["google_token"]["installed"])
+    creds = Credentials.from_authorized_user_info(creds_json)
 
-    if creds_json:
-        creds = Credentials.from_authorized_user_info(creds_json)
-
-    if not creds or not creds.valid:
+    if not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', 
-                ['https://www.googleapis.com/auth/drive']
-            )
-            creds = flow.run_local_server(port=0)
 
     service = build('drive', 'v3', credentials=creds)
     return service
