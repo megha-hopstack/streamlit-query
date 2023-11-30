@@ -531,12 +531,13 @@ folder_id = '1aj2VjXTW_Tv2eti38HgjIUkc7PQQmQSw'  # Replace with your folder ID
 log_file_path = 'app.log'  # Path to your log file
 
 service = create_drive_service()
-file_id = upload_file(log_file_path, folder_id, service)
+
 
 if question_input:
-        response = process_user_message(question_input)
+    response = process_user_message(question_input)
 else:
     response = ""
     
+file_id = upload_file(log_file_path, folder_id, service)
 
 st.text_area("Answer:", response, height=300)
