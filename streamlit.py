@@ -32,17 +32,21 @@ SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
 def authenticate_google_drive():
     creds = None
-    token_info = st.secrets["google_token"]["installed"]
-    
+    token_info = dict(st.secrets['google_token']['installed'])  # Convert AttrDict to a regular dictionary
+
+    # Save the token info to a temporary file
     with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
-       json.dump(token_info, temp_file)
-       temp_file_path = temp_file.name
-   
-   # Use the temporary file in the credentials method
+        json.dump(token_info, temp_file)
+        temp_file_path = temp_file.name
+    
+    # Use the temporary file in the credentials method
     creds = Credentials.from_authorized_user_file(temp_file_path, SCOPES)
 
-   # Optional: delete the temporary file if you want
-    os.remove(temp_file_path)
+    if not creds or not creds.valid:
+        # Code to handle re-authentication...
+        pass
+
+    return creds
 
 def upload_file_to_drive(filename, folder_id, drive_service):
     file_metadata = {
