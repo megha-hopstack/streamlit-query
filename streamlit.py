@@ -16,49 +16,49 @@ from io import StringIO
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 import streamlit as st
+import logging
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-from google.oauth2.credentials import Credentials
-import logging
-import json
-import tempfile
+from google.auth.transport.requests import Request
+
 
 logging.basicConfig(
     filename='app.log',  # Specify the log file name
     level=logging.INFO  # Set the logging level (INFO, WARNING, ERROR, etc.)
 )
 
-SCOPES = ['https://www.googleapis.com/auth/drive.file']
-
-def authenticate_google_drive():
+# Function to authenticate and create a Drive service
+def create_drive_service():
+    creds_json = st.secrets["google_token"]["installed"]
     creds = None
-    token_info = dict(st.secrets['google_token']['installed'])  # Convert AttrDict to a regular dictionary
 
-    # Save the token info to a temporary file
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
-        json.dump(token_info, temp_file)
-        temp_file_path = temp_file.name
-    
-    # Use the temporary file in the credentials method
-    creds = Credentials.from_authorized_user_file(temp_file_path, SCOPES)
+    if creds_json:
+        creds = Credentials.from_authorized_user_info(creds_json)
 
     if not creds or not creds.valid:
-        # Code to handle re-authentication...
-        pass
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', 
+                ['https://www.googleapis.com/auth/drive']
+            )
+            creds = flow.run_local_server(port=0)
 
-    return creds
+    service = build('drive', 'v3', credentials=creds)
+    return service
 
-def upload_file_to_drive(filename, folder_id, drive_service):
+def upload_file(file_path, folder_id, service):
     file_metadata = {
-        'name': filename,
-        'parents': [folder_id]  # Specify the folder ID
+        'name': os.path.basename(file_path),
+        'parents': [folder_id]
     }
-    media = MediaFileUpload(filename, mimetype='text/plain')
-    file = drive_service.files().create(body=file_metadata,
-                                        media_body=media,
-                                        fields='id').execute()
-    print('File ID: %s' % file.get('id'))
-    
+    media = MediaFileUpload(file_path, mimetype='text/plain')
+    file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+    return file.get('id')
+
 
 openai.api_key  = st.secrets['OPENAI_API_KEY']
 
@@ -534,21 +534,19 @@ def process_user_message(user_input, debug=True):
     return output_value
 
 
-creds = authenticate_google_drive()
-drive_service = build('drive', 'v3', credentials=creds)
-
 question_input = st.text_input("Question:")
 logging.info(f"Question: {question_input}")
 
+folder_id = '1aj2VjXTW_Tv2eti38HgjIUkc7PQQmQSw'  # Replace with your folder ID
+log_file_path = 'app.log'  # Path to your log file
+
+service = create_drive_service()
+file_id = upload_file(log_file_path, folder_id, service)
 
 if question_input:
         response = process_user_message(question_input)
 else:
     response = ""
     
-folder_id = '1aj2VjXTW_Tv2eti38HgjIUkc7PQQmQSw'
-upload_file_to_drive('app.log', folder_id, drive_service)
-
-
 
 st.text_area("Answer:", response, height=300)
