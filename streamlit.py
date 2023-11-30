@@ -30,8 +30,8 @@ logging.basicConfig(
 
 
 def create_drive_service():
-    creds_json = json.loads(st.secrets["google_token"]["installed"])
-    creds = Credentials.from_authorized_user_info(creds_json)
+    creds_dict = st.secrets["google_token"]["installed"]
+    creds = Credentials.from_authorized_user_info(creds_dict)
 
     if not creds.valid:
         if creds and creds.expired and creds.refresh_token:
