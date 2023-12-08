@@ -480,7 +480,8 @@ def process_user_message(user_input, debug=True):
 
     final_response = get_completion_from_messages(messages)
     logging.debug("Step 2: Generated response to user question.")
-    logging.info(f"Response: {final_response}")
+    with open('qa.txt', "w") as file:
+        file.write("Response: " + final_response)
 
     # Step 3: Put the answer through the Moderation API
     response = openai.Moderation.create(input=final_response)
@@ -525,19 +526,19 @@ def process_user_message(user_input, debug=True):
 
 
 question_input = st.text_input("Question:")
-logging.info(f"Question: {question_input}")
+with open('qa.txt', "w") as file:
+    file.write("Question: " + question_input)
 
-folder_id = '1aj2VjXTW_Tv2eti38HgjIUkc7PQQmQSw'  # Replace with your folder ID
-log_file_path = 'app.log'  # Path to your log file
+folder_id = '1aj2VjXTW_Tv2eti38HgjIUkc7PQQmQSw'  
+qa_file_path = 'qa.txt'  
 
 service = create_drive_service()
-
 
 if question_input:
     response = process_user_message(question_input)
 else:
     response = ""
     
-file_id = upload_file(log_file_path, folder_id, service)
+file_id = upload_file(qa_file_path, folder_id, service)
 
 st.text_area("Answer:", response, height=300)
