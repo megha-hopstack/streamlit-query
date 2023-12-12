@@ -560,6 +560,9 @@ def process_user_message(user_input, debug=True):
     ] 
 
     final_response = get_completion_from_messages(messages)
+    
+    with open('qa.txt', "w") as file:
+        file.write("Response: " + final_response)
     if debug:
         print("Step 3: Generated response to user question.")
 
