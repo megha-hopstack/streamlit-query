@@ -113,7 +113,25 @@ europe_database = europe_client["platform-production"]
 
 tenants_collection = north_america_database["tenants"]
 
+tenants_collection = north_america_database["tenants"]
 
+tenants = []
+
+cursor = tenants_collection.find({},{"_id": 1, "name": 1, 'apiGateway':1, "active": 1})
+tenant_df =  pd.DataFrame(list(cursor))
+
+tenant_df.rename(columns = {'_id':'tenant'}, inplace = True)
+
+tenant_df['tenant'] = tenant_df['tenant'].astype(str)
+
+tenant_df = tenant_df[tenant_df['active'] == True]
+
+tenant_df.reset_index(drop=True, inplace=True)
+
+for i in range(len(tenant_df)):
+    name = tenant_df['name'][i]
+    tenants.append(name)
+    
 def exec_response(response):
     lines = response.split('\n')
 
@@ -206,7 +224,8 @@ def process_user_message(user_input, debug=True):
     warehouse, createdAt, updatedAt, tenant, source, images, rawData, quantities.
     
     The 'name' field in the 'tenants' collection contains the name of the tenant and the pymongo query \
-    must extract the information for only the tenants given in the input natural language query. 
+    might need extract the information for the tenants given in the input natural language query. The names of the tenants \
+    are given in {tenants}. Use this to find the tenant name given in the query and match it to the tenants_collection.
     If a particular tenant in the unified platform (all tenants apart from Delmar and Wirago) is queried,
     then we must find the tenant id and apiGateway from the tenants collection after matching the name.
     If the apiGateway is 'https://api.prod.us-east-1.hopstack.io' then we query the north america database \
