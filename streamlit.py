@@ -68,9 +68,6 @@ def get_completion_from_messages(messages,
         max_tokens=max_tokens, # the maximum number of tokens the model can ouptut 
     )
     response = response.choices[0].message["content"]
-    response = response.strip('"Output:\n```\n')
-    response = response.split("\n```\nExplanation:\n")[0].strip()
-    response = response.split("\n```\n\nExplanation:\n")[0].strip()
 
     return response
 
@@ -116,61 +113,6 @@ europe_database = europe_client["platform-production"]
 
 tenants_collection = north_america_database["tenants"]
 
-wira_order_collection = wira_database["orders"]
-wira_orderlineitems_collection = wira_database["orderlineitems"]
-wira_customers_collection = wira_database["customers"]
-wira_warehouses_collection = wira_database["warehouses"]
-wira_products_collection = wira_database["productvariants"]
-
-delmar_order_collection = delmar_database["orders"]
-delmar_orderlineitems_collection = delmar_database["orderlineitems"]
-delmar_warehouses_collection = delmar_database["warehouses"]
-delmar_users_collection = delmar_database["users"]
-
-north_america_order_collection = north_america_database["orders"]
-north_america_orderlineitems_collection = north_america_database["orderlineitems"]
-north_america_customers_collection = north_america_database["customers"]
-north_america_warehouses_collection = north_america_database["warehouses"]
-north_america_users_collection = north_america_database["users"]
-north_america_products_collection = north_america_database["productvariants"]
-
-south_east_order_collection = south_east_database["orders"]
-south_east_orderlineitems_collection = south_east_database["orderlineitems"]
-south_east_customers_collection = south_east_database["customers"]
-south_east_warehouses_collection = south_east_database["warehouses"]
-south_east_users_collection = south_east_database["users"]
-south_east_products_collection = south_east_database["productvariants"]
-
-europe_order_collection = europe_database["orders"]
-europe_orderlineitems_collection = europe_database["orderlineitems"]
-europe_customers_collection = europe_database["customers"]
-europe_warehouses_collection = europe_database["warehouses"]
-europe_users_collection = europe_database["users"]
-europe_products_collection = europe_database["productvariants"]
-
-cursor = tenants_collection.find({},{"_id": 1, "name": 1, 'apiGateway':1, "active": 1})
-tenant_df =  pd.DataFrame(list(cursor))
-
-tenant_df.rename(columns = {'_id':'tenant'}, inplace = True)
-
-tenant_df['tenant'] = tenant_df['tenant'].astype(str)
-
-tenant_df = tenant_df[tenant_df['active'] == True]
-tenant_df = tenant_df[tenant_df['name'] != 'Hopstack Inc']
-tenant_df = tenant_df[tenant_df['name'] != 'Hopstack']
-tenant_df = tenant_df[tenant_df['name'] != 'Delmar']
-tenant_df = tenant_df[tenant_df['name'] != 'Ops Test Inc']
-tenant_df = tenant_df[tenant_df['name'] != 'Starter']
-tenant_df = tenant_df[tenant_df['name'] != 'Feature Test']
-tenant_df = tenant_df[tenant_df['name'] != 'IFD']
-tenant_df = tenant_df[tenant_df['name'] != 'TYM Tractors']
-tenant_df = tenant_df[tenant_df['name'] != 'Hooli Inc']
-tenant_df = tenant_df[tenant_df['name'] != 'KGW Logistics']
-tenant_df = tenant_df[tenant_df['name'] != 'Sometime Malaysia']
-tenant_df = tenant_df[tenant_df['name'] != 'Hopstack Dev']
-tenant_df = tenant_df[tenant_df['name'] != 'Hopstack-Sneha']
-
-tenant_df.reset_index(drop=True, inplace=True)
 
 def exec_response(response):
     lines = response.split('\n')
@@ -207,10 +149,10 @@ def process_user_message(user_input, debug=True):
     moderation_output = response["results"][0]
 
     if moderation_output["flagged"]:
-        logging.debug("Step 1: Input flagged by Moderation API.")
+        print("Step 1: Input flagged by Moderation API.")
         return "Sorry, we cannot process this request."
 
-    logging.debug("Step 1: Input passed moderation check.")
+    if debug: print("Step 1: Input passed moderation check.")
 
     # Step 2: Answer the user question
     delimiter = "####"
@@ -233,21 +175,15 @@ def process_user_message(user_input, debug=True):
     Delmar and Wirago are independent tenants while the rest are part of a \
     unified platform, each responsible for multiple tenants. The tenants are defined in the 'tenant_collection'
     
-    If the query contains the tenant 'Delmar', there are 4 collections (orders, orderlineitems, warehouses, users) for which the python variables \
-    defined are delmar_order_collection, delmar_orderlineitems_collection, delmar_warehouses_collection, delmar_users_collection. 
+    If the query contains the tenant 'Delmar', there are 4 collections (orders, orderlineitems, warehouses, users. 
     
-    If the query contains the tenant 'Wira Go', there are 5 collections (orders, orderlineitems, warehouses, users, productvariants)
-    for which the python variables defined are wira_order_collection, wira_orderlineitems_collection, wira_customers_collection, wira_warehouses_collection, wira_products_collection.
+    If the query contains the tenant 'Wira Go', there are 5 collections (orders, orderlineitems, warehouses, users, productvariants).
 
     If the query contains anything else other than or along with Delmar or Wira Go, then use the following information.
 
-    For North America unified platform, there are 6 collections (tenants, orders and orderlineitems, customers, warehouses, users) \
-    for which the python variables defined are
+    For North America unified platform, there are 6 collections (tenants, orders and orderlineitems, customers, warehouses, users).
 
-    For South East unified and Europe platform, there are 5 collections (orders and orderlineitems, customers, warehouses, users) \
-    for which the python variables defined are south_east_order_collection, south_east_orderlineitems_collection, south_east_customers_collection, south_east_warehouses_collection, \
-    south_east_users_collection, south_east_products_collection, europe_order_collection, europe_orderlineitems_collection, europe_customers_collection, europe_warehouses_collection, \
-    europe_users_collection, europe_products_collection
+    For South East unified and Europe platform, there are 5 collections (orders and orderlineitems, customers, warehouses, users).
     
     Note that the North America database contains the tenant collection but the South East and Europe database do not.
 
@@ -276,10 +212,7 @@ def process_user_message(user_input, debug=True):
     If the apiGateway is 'https://api.prod.us-east-1.hopstack.io' then we query the north america database \
     with the extracted tenant id. If the apiGateway is 'https://api.prod.ap-southeast-1.hopstack.io' then we \
     query the south east database with extracted tenant id. If the apiGateway is 'https://api.prod.eu-west-2.hopstack.io' then we \
-    query the europe database with the extracted tenant id. 
-    
-    Extract the date fields from the given jsons and ensure that any date related python code is \
-    compatible with the date formats used in the database.
+    query the europe database with extracted tenant id.
     
     Only return a python code containing pymongo query and nothing else. Use the variables given above in the query.
     Add a print() to the last line of the code that prints the answer.
@@ -287,122 +220,148 @@ def process_user_message(user_input, debug=True):
     
     few_shot_user_1 = """How many skus were sold in the last month for wirago?"""
     few_shot_assistant_1 = """ 
-    from datetime import datetime, timedelta
-    import calendar
+    # Current date and time
+    today_datetime = datetime.now()
 
-    # Set the start and end dates for the last month
-    today = datetime.strptime("2023-06-14 00:00:00", "%Y-%m-%d %H:%M:%S")
-    last_month_end = today.replace(day=1) - timedelta(days=1)
+    # Calculate the date for the start and end of the last month
+    last_month_end = today_datetime.replace(day=1) - timedelta(days=1)
     last_month_start = last_month_end.replace(day=1)
 
-    # Convert the dates to the required format
-    start_date = int(last_month_start.timestamp() * 1000)
-    end_date = int(last_month_end.timestamp() * 1000)
+    # Convert datetime objects to ObjectId values for MongoDB queries
+    start_oid = ObjectId.from_datetime(last_month_start)
+    end_oid = ObjectId.from_datetime(last_month_end)
 
-    # Query the database for the number of SKUs sold
-    sold_skus = wira_database.orderlineitems.count_documents({
-        "createdAt": {
-            "$gte": start_date,
-            "$lte": end_date
+    # Aggregate the quantities of SKUs sold
+    aggregation_result = wira_database.orderlineitems.aggregate([
+        {
+            "$match": {
+                "_id": {"$gte": start_oid, "$lt": end_oid}
+            }
+        },
+        {
+            "$group": {
+                "_id": None,  # Grouping without a specific field to get total sum
+                "total_quantity": {"$sum": "$quantity"}  # Summing up the quantities
+            }
         }
-    })
-    print(sold_skus)"""
+    ])
+
+    # Extract the total quantity from the aggregation result
+    total_quantity = next(aggregation_result, {}).get("total_quantity", 0)
+    print(total_quantity)"""
     
     few_shot_user_2 = """Which is the sku that has sold the most for Delmar?"""
     few_shot_assistant_2 = """ 
     pipeline = [
-        {"$group": {"_id": "$sku", "total_sold": {"$sum": "$quantity"}}},
-        {"$sort": {"total_sold": -1}},
-        {"$limit": 1}
-    ]
+            {"$group": {"_id": "$sku", "total_sold": {"$sum": "$quantity"}}},
+            {"$sort": {"total_sold": -1}},
+            {"$limit": 1}
+        ]
 
-    result = delmar_orderlineitems_collection.aggregate(pipeline)
+    result = delmar_database.orderlineitems.aggregate(pipeline)
 
     most_sold_sku = next(result)["_id"]
     print(most_sold_sku)"""
     
-    few_shot_user_3 = """Which is the tenant from the unified \
-    platforms with the highest quantity of sales?"""
+    few_shot_user_3 = """Which is the tenant with the highest quantity of sales?"""
     few_shot_assistant_3 = """
-    pipeline = [
+    # Pipelines for aggregation
+    pipeline_with_tenant = [
         {"$group": {
             "_id": "$tenant",
             "total_sales": {"$sum": "$quantity"}
-        }},
-        {"$sort": {"total_sales": -1}},
-        {"$limit": 1}
+        }}
     ]
 
-    result_na = list(north_america_database.orderlineitems.aggregate(pipeline))
-    result_se = list(south_east_database.orderlineitems.aggregate(pipeline))
+    pipeline_without_tenant = [
+        {"$group": {
+            "_id": None,
+            "total_sales": {"$sum": "$quantity"}
+        }}
+    ]
 
-    max_sales_na = result_na[0]['total_sales'] if result_na else 0
-    max_sales_se = result_se[0]['total_sales'] if result_se else 0
+    # Aggregating sales for each database
+    sales_na = list(north_america_database.orderlineitems.aggregate(pipeline_with_tenant))
+    sales_se = list(south_east_database.orderlineitems.aggregate(pipeline_with_tenant))
+    sales_eu = list(europe_database.orderlineitems.aggregate(pipeline_with_tenant))
 
-    print(max_sales_na)
-    print(max_sales_se)
+    total_sales_delmar = list(delmar_database.orderlineitems.aggregate(pipeline_without_tenant))[0]['total_sales']
+    total_sales_wira = list(wira_database.orderlineitems.aggregate(pipeline_without_tenant))[0]['total_sales']
 
-    if max_sales_na > max_sales_se:
-        max_sales_tenant_id = result_na[0]['_id']
-        max_sales_db = north_america_database
+    # Combining all sales data
+    combined_sales = sales_na + sales_se + sales_eu
+    combined_sales.append({"_id": "Delmar", "total_sales": total_sales_delmar})
+    combined_sales.append({"_id": "Wira", "total_sales": total_sales_wira})
+
+    # Finding the tenant with the highest sales
+    highest_sales = max(combined_sales, key=lambda x: x['total_sales'])
+    highest_sales_tenant_id = highest_sales['_id']
+    highest_sales_number = highest_sales['total_sales']
+
+    # Check if the highest sales tenant is neither Delmar nor Wira
+    if highest_sales_tenant_id not in ["Delmar", "Wira"]:
+        # Find the tenant's name using the tenant ID
+        object_id = ObjectId(highest_sales_tenant_id)
+        tenant_doc = tenants_collection.find_one({"_id": object_id})
+
+        # Extracting the name
+        tenant_name = tenant_doc['name']
+        print(f"The tenant with the highest sales is {tenant_name} with total sales of {highest_sales_number}")
     else:
-        max_sales_tenant_id = result_se[0]['_id']
-        max_sales_db = south_east_database
+        # Handle the special cases where the highest sales are from Delmar or Wira
+        print(f"The highest sales are from {highest_sales_tenant_id} with total sales of {highest_sales_number}")"""
 
-    max_sales_tenant = max_sales_db.tenants.find_one({"_id": ObjectId(max_sales_tenant_id)})
-    print(max_sales_tenant)"""
-    
     few_shot_user_4 = """How many orders were successfully completed last month by Wira?"""
     few_shot_assistant_4 = """
-    from datetime import datetime, timedelta
+    # Get the current date and time
+    today_datetime = datetime.now()
 
-    # Set the start and end dates for the last month
-    today = datetime.strptime("2023-06-14 00:00:00", "%Y-%m-%d %H:%M:%S")
-    last_month_end = today.replace(day=1) - timedelta(days=1)
+    # Calculate the date for the start and end of the last month
+    last_month_end = today_datetime.replace(day=1) - timedelta(days=1)
     last_month_start = last_month_end.replace(day=1)
 
-    # Convert the dates to the required format
-    start_date = last_month_start.strftime("%Y-%m-%d")
-    end_date = last_month_end.strftime("%Y-%m-%d")
+    # Convert the datetime objects to ObjectId values for MongoDB queries
+    start_oid = ObjectId.from_datetime(last_month_start)
+    end_oid = ObjectId.from_datetime(last_month_end)
 
-    # Query the database for the number of successfully completed orders
-    completed_orders = wira_order_collection.count_documents({
+    # Query the wira_order_collection for the number of successfully completed orders
+    completed_orders = wira_database.orders.count_documents({
         "orderStatus": "COMPLETED",
-        "orderDate": {
-            "$gte": start_date,
-            "$lte": end_date
+        "_id": {
+            "$gte": start_oid,
+            "$lt": end_oid
         }
     })
     print(completed_orders)
+
     """
     few_shot_user_5 = """How many orders were shipped to 'North Carolina' in the past six months by Delmar?"""
     few_shot_assistant_5 = """
-    from datetime import datetime, timedelta
+    # Get the current date and time
+    today_datetime = datetime.now()
 
-    # Set the start and end dates for the past six months
-    today = datetime.strptime("2023-06-14 00:00:00", "%Y-%m-%d %H:%M:%S")
-    six_months_ago = today - timedelta(days=180)
+    # Calculate the date for six months ago
+    six_months_ago = today_datetime - timedelta(days=180)
 
-    # Query the database for the number of orders shipped to 'North Carolina'
-    shipped_orders = delmar_order_collection.count_documents({
+    # Convert the datetime objects to ObjectId values for MongoDB queries
+    start_oid = ObjectId.from_datetime(six_months_ago)
+    end_oid = ObjectId.from_datetime(today_datetime)
+
+    # Query the delmar_order_collection for the number of orders shipped to 'North Carolina'
+    shipped_orders = delmar_database.orders.count_documents({
         "shippingAddress.state": "North Carolina",
-        "orderDate": {
-            "$gte": six_months_ago,
-            "$lte": today
+        "_id": {
+            "$gte": start_oid,
+            "$lte": end_oid
         }
     })
     print(shipped_orders)
     """
     
-    few_shot_user_6 = """How many orders were successfully completed in the last 6 months by prime zero prep?"""
+    few_shot_user_6 = """How many orders were successfully completed in the past year by prime zero prep?"""
     few_shot_assistant_6 = """
-    from datetime import datetime, timedelta
-
     # Find the tenant document
     tenant_doc = tenants_collection.find_one({"name": "Prime Zero Prep"})
-    if tenant_doc is None:
-        print("Tenant not found.")
-        exit(1)
 
     # Get tenant id and apiGateway
     tenant_id = tenant_doc['_id']
@@ -410,50 +369,30 @@ def process_user_message(user_input, debug=True):
 
     # Choose the appropriate collection
     if api_gateway == "https://api.prod.us-east-1.hopstack.io":
-        order_collection = north_america_order_collection
+        order_collection = north_america_database['orders']
     elif api_gateway == 'https://api.prod.ap-southeast-1.hopstack.io':
-        order_collection = south_east_order_collection
-    else:
-        print("Unknown apiGateway.")
-        exit(1)
+        order_collection = south_east_database['orders']
+    elif api_gateway == 'https://api.prod.eu-west-2.hopstack.io':
+        order_collection = europe_database['orders']
 
     # Fetch a sample document from the order collection
     sample_doc = order_collection.find_one({"tenant": str(tenant_id)})
-    if sample_doc is None:
-        print("No orders found for tenant.")
-        exit(1)
 
     # Set the start and end dates for the last month
-    today = datetime.strptime("2023-06-14 00:00:00", "%Y-%m-%d %H:%M:%S")
-    last_month_start = today - timedelta(days=180)
-    last_month_end = today
+    today = datetime.now()
+    last_six_months_start = today - timedelta(days=365)
 
-    # Check if 'orderDate' is a string, a datetime object, or a Unix timestamp
-    if isinstance(sample_doc['orderDate'], datetime):
-        # If 'orderDate' is a datetime object, just use the datetime objects for comparison
-        start_date = last_month_start
-        end_date = last_month_end
-    elif isinstance(sample_doc['orderDate'], str):
-        # If 'orderDate' is a string, convert the datetime objects to strings
-        start_date = last_month_start.strftime("%Y-%m-%d")
-        end_date = last_month_end.strftime("%Y-%m-%d")
-    elif isinstance(sample_doc['orderDate'], (int, float)):
-        # If 'orderDate' is a Unix timestamp (assumed to be an integer or a float), convert the datetime objects to Unix timestamps
-        start_date = int(last_month_start.timestamp() * 1000)  # Multiplied by 1000 to convert from seconds to milliseconds
-        end_date = int(last_month_end.timestamp() * 1000)
-    else:
-        print("Unknown date format in order collection.")
-        exit(1)
-
-    print(start_date, end_date)
+    # Convert the datetime objects to ObjectId values for MongoDB queries
+    start_oid = ObjectId.from_datetime(last_six_months_start)
+    end_oid = ObjectId.from_datetime(today)
 
     # Query the database for the number of successfully completed orders
     completed_orders = order_collection.count_documents({
         "tenant": str(tenant_id),
         "orderStatus": "COMPLETED",
-        "orderDate": {
-            "$gte": start_date,
-            "$lte": end_date
+        "_id": {
+            "$gte": start_oid,
+            "$lte": end_oid
         }
     })
 
@@ -464,9 +403,6 @@ def process_user_message(user_input, debug=True):
     few_shot_user_7 = """How many SKUs have less than 3 orders during their lifetime for Nawel?"""
     few_shot_assistant_7 = """
     tenant_doc = tenants_collection.find_one({"name": "Nawel"})
-    if tenant_doc is None:
-        print("Tenant not found.")
-        exit(1)
 
     # Get tenant id and apiGateway
     tenant_id = tenant_doc['_id']
@@ -474,20 +410,18 @@ def process_user_message(user_input, debug=True):
 
     # Choose the appropriate collection
     if api_gateway == "https://api.prod.us-east-1.hopstack.io":
-        order_collection = north_america_order_collection
-        orderlineitems_collection = north_america_orderlineitems_collection
+        order_collection = north_america_database.orders
+        orderlineitems_collection = north_america_database.orderlineitems
     elif api_gateway == 'https://api.prod.ap-southeast-1.hopstack.io':
-        order_collection = south_east_order_collection
-        orderlineitems_collection = south_east_orderlineitems_collection
-    else:
-        print("Unknown apiGateway.")
-        exit(1)
+        order_collection = south_east_database.orders
+        orderlineitems_collection = south_east_database.orderlineitems
+    elif api_gateway == 'https://api.prod.eu-west-2.hopstack.io':
+        order_collection = europe_database.orders
+        orderlineitems_collection = europe_database.orderlineitems
+
 
     # Fetch a sample document from the order collection
     sample_doc = order_collection.find_one({"tenant": str(tenant_id)})
-    if sample_doc is None:
-        print("No orders found for tenant.")
-        exit(1)
 
     # Query the database for the SKUs with less than 3 orders
     skus_less_than_3_orders = orderlineitems_collection.aggregate([
@@ -515,28 +449,60 @@ def process_user_message(user_input, debug=True):
     tenant_df['tenant'] = tenant_df['tenant'].astype(str)
 
     tenant_df = tenant_df[tenant_df['active'] == True]
-    tenant_df = tenant_df[tenant_df['name'] != 'Hopstack Inc']
-    tenant_df = tenant_df[tenant_df['name'] != 'Hopstack']
-    tenant_df = tenant_df[tenant_df['name'] != 'Delmar']
-    tenant_df = tenant_df[tenant_df['name'] != 'Ops Test Inc']
-    tenant_df = tenant_df[tenant_df['name'] != 'Starter']
-    tenant_df = tenant_df[tenant_df['name'] != 'Feature Test']
-    tenant_df = tenant_df[tenant_df['name'] != 'IFD']
-    tenant_df = tenant_df[tenant_df['name'] != 'TYM Tractors']
-    tenant_df = tenant_df[tenant_df['name'] != 'Hooli Inc']
-    tenant_df = tenant_df[tenant_df['name'] != 'KGW Logistics']
-    tenant_df = tenant_df[tenant_df['name'] != 'Sometime Malaysia']
-    tenant_df = tenant_df[tenant_df['name'] != 'Hopstack Dev']
-    tenant_df = tenant_df[tenant_df['name'] != 'Hopstack-Sneha']
 
     tenant_df.reset_index(drop=True, inplace=True)
 
     for i in range(len(tenant_df)):
         name = tenant_df['name'][i]
         tenants.append(name)
-        tenants.append('Wira Go')
 
-    print(len(tenants), tenants)"""
+    tenants_str = ', '.join(tenants)
+
+    # Printing the formatted string
+    print(f"There are {len(tenants)} tenants, which are {tenants_str}")"""
+
+    few_shot_user_9 = """How many orders were completed yesterday?"""
+    few_shot_assistant_9 = """ 
+    # Calculate yesterday's date
+    today = datetime.now()
+    yesterday_start = today - timedelta(days=1)
+    yesterday_start = yesterday_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_end = yesterday_start + timedelta(days=1) - timedelta(microseconds=1)
+
+    # Convert the datetime objects to ObjectId values for MongoDB queries
+    start_oid = ObjectId.from_datetime(yesterday_start)
+    end_oid = ObjectId.from_datetime(yesterday_end)
+
+    north_america_order_collection = north_america_database['orders']
+    south_east_order_collection = south_east_database['orders']
+    europe_order_collection = europe_database['orders']
+    delmar_order_collection = delmar_database['orders']
+    wira_order_collection = wira_database['orders']
+
+    # Define the collections for each tenant or database
+    collections = {
+        "North America": north_america_order_collection,
+        "South East": south_east_order_collection,
+        "Europe": europe_order_collection,
+        "Delmar": delmar_order_collection,
+        "Wira": wira_order_collection
+    }
+
+    total_completed_orders = 0
+
+    # Iterate through each collection and count the completed orders
+    for name, collection in collections.items():
+        completed_orders = collection.count_documents({
+            "orderStatus": "COMPLETED",
+            "_id": {
+                "$gte": start_oid,
+                "$lte": end_oid
+            }
+        })
+        total_completed_orders += completed_orders
+
+    print(f"Total number of orders completed yesterday across all tenants: {total_completed_orders}")
+    """
 
     messages =  [  
     {'role':'system', 'content': system_message},    
@@ -556,13 +522,12 @@ def process_user_message(user_input, debug=True):
     {'role':'assistant', 'content': few_shot_assistant_7 },
     {'role':'user', 'content': f"{delimiter}{few_shot_user_8}{delimiter}"},  
     {'role':'assistant', 'content': few_shot_assistant_8 },
+    {'role':'user', 'content': f"{delimiter}{few_shot_user_9}{delimiter}"},  
+    {'role':'assistant', 'content': few_shot_assistant_9},
     {'role':'user', 'content': f"{delimiter}{user_input}{delimiter}"},  
     ] 
 
     final_response = get_completion_from_messages(messages)
-    
-    with open('qa.txt', "w") as file:
-        file.write("Response: " + final_response)
     if debug:
         print("Step 3: Generated response to user question.")
 
@@ -607,6 +572,7 @@ def process_user_message(user_input, debug=True):
     output_value = exec_response(final_response)
     if debug: print("Step 7: Executed generated python code.")
     return output_value
+
 
 
 question_input = st.text_input("Question:")
