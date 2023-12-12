@@ -461,6 +461,83 @@ def process_user_message(user_input, debug=True):
 
     """
     
+    few_shot_user_7 = """How many SKUs have less than 3 orders during their lifetime for Nawel?"""
+    few_shot_assistant_7 = """
+    tenant_doc = tenants_collection.find_one({"name": "Nawel"})
+    if tenant_doc is None:
+        print("Tenant not found.")
+        exit(1)
+
+    # Get tenant id and apiGateway
+    tenant_id = tenant_doc['_id']
+    api_gateway = tenant_doc['apiGateway']
+
+    # Choose the appropriate collection
+    if api_gateway == "https://api.prod.us-east-1.hopstack.io":
+        order_collection = north_america_order_collection
+        orderlineitems_collection = north_america_orderlineitems_collection
+    elif api_gateway == 'https://api.prod.ap-southeast-1.hopstack.io':
+        order_collection = south_east_order_collection
+        orderlineitems_collection = south_east_orderlineitems_collection
+    else:
+        print("Unknown apiGateway.")
+        exit(1)
+
+    # Fetch a sample document from the order collection
+    sample_doc = order_collection.find_one({"tenant": str(tenant_id)})
+    if sample_doc is None:
+        print("No orders found for tenant.")
+        exit(1)
+
+    # Query the database for the SKUs with less than 3 orders
+    skus_less_than_3_orders = orderlineitems_collection.aggregate([
+        {"$match": {"tenant": str(tenant_id)}},
+        {"$group": {"_id": "$sku", "total_orders": {"$sum": 1}}},
+        {"$match": {"total_orders": {"$lt": 3}}}
+    ])
+
+    sku_count = 0
+    for sku in skus_less_than_3_orders:
+        sku_count += 1
+
+    print(sku_count)
+
+    """
+    few_shot_user_8 = """How many tenants are there? List all the tenants"""
+    few_shot_assistant_8 = """ 
+    tenants = []
+
+    cursor = tenants_collection.find({},{"_id": 1, "name": 1, 'apiGateway':1, "active": 1})
+    tenant_df =  pd.DataFrame(list(cursor))
+
+    tenant_df.rename(columns = {'_id':'tenant'}, inplace = True)
+
+    tenant_df['tenant'] = tenant_df['tenant'].astype(str)
+
+    tenant_df = tenant_df[tenant_df['active'] == True]
+    tenant_df = tenant_df[tenant_df['name'] != 'Hopstack Inc']
+    tenant_df = tenant_df[tenant_df['name'] != 'Hopstack']
+    tenant_df = tenant_df[tenant_df['name'] != 'Delmar']
+    tenant_df = tenant_df[tenant_df['name'] != 'Ops Test Inc']
+    tenant_df = tenant_df[tenant_df['name'] != 'Starter']
+    tenant_df = tenant_df[tenant_df['name'] != 'Feature Test']
+    tenant_df = tenant_df[tenant_df['name'] != 'IFD']
+    tenant_df = tenant_df[tenant_df['name'] != 'TYM Tractors']
+    tenant_df = tenant_df[tenant_df['name'] != 'Hooli Inc']
+    tenant_df = tenant_df[tenant_df['name'] != 'KGW Logistics']
+    tenant_df = tenant_df[tenant_df['name'] != 'Sometime Malaysia']
+    tenant_df = tenant_df[tenant_df['name'] != 'Hopstack Dev']
+    tenant_df = tenant_df[tenant_df['name'] != 'Hopstack-Sneha']
+
+    tenant_df.reset_index(drop=True, inplace=True)
+
+    for i in range(len(tenant_df)):
+        name = tenant_df['name'][i]
+        tenants.append(name)
+        tenants.append('Wira Go')
+
+    print(len(tenants), tenants)"""
+
     messages =  [  
     {'role':'system', 'content': system_message},    
     {'role':'user', 'content': f"{delimiter}{few_shot_user_1}{delimiter}"},  
@@ -475,23 +552,26 @@ def process_user_message(user_input, debug=True):
     {'role':'assistant', 'content': few_shot_assistant_5 },
     {'role':'user', 'content': f"{delimiter}{few_shot_user_6}{delimiter}"},  
     {'role':'assistant', 'content': few_shot_assistant_6 },
+    {'role':'user', 'content': f"{delimiter}{few_shot_user_7}{delimiter}"},  
+    {'role':'assistant', 'content': few_shot_assistant_7 },
+    {'role':'user', 'content': f"{delimiter}{few_shot_user_8}{delimiter}"},  
+    {'role':'assistant', 'content': few_shot_assistant_8 },
     {'role':'user', 'content': f"{delimiter}{user_input}{delimiter}"},  
     ] 
 
     final_response = get_completion_from_messages(messages)
-    logging.debug("Step 2: Generated response to user question.")
-    with open('qa.txt', "w") as file:
-        file.write("Response: " + final_response)
+    if debug:
+        print("Step 3: Generated response to user question.")
 
     # Step 3: Put the answer through the Moderation API
     response = openai.Moderation.create(input=final_response)
     moderation_output = response["results"][0]
 
     if moderation_output["flagged"]:
-        logging.debug("Response flagged by Moderation API.")
+        if debug: print("Step 5: Response flagged by Moderation API.")
         return "Sorry, we cannot provide this information."
 
-    logging.debug("Step 3: Response passed moderation check.")
+    if debug: print("Step 4: Response passed moderation check.")
     
     # Step 4: Ask the model if the response answers the initial user query well
     user_message = f"""
@@ -507,21 +587,22 @@ def process_user_message(user_input, debug=True):
     ]
     
     evaluation_response = get_completion_from_messages(messages)
-    logging.debug("Step 4: Model evaluated if the response is a python code.")
+    if debug:
+        print("Step 5: Model evaluated if the response is a python code.")
         
     #Step 7: If yes, use this answer; if not, say that you cannot provide the information
     if "Y" in evaluation_response:  # Using "in" instead of "==" to be safer for model output variation (e.g., "Y." or "Yes")
-        logging.debug("Step 5: Model approved the response.")
+        if debug: print("Step 6: Model approved the response.")
     else:
-        logging.debug("Step 5: Model disapproved the response.")
+        if debug: print("Step 6: Model disapproved the response.")
         neg_str = "I'm unable to provide the information you're looking for."
         return neg_str
 
-    logging.debug(final_response)
+    if debug: print(final_response)
     
     #Step 8: Format and run the code and return output
     output_value = exec_response(final_response)
-    logging.debug("Step 7: Executed generated python code.")
+    if debug: print("Step 7: Executed generated python code.")
     return output_value
 
 
