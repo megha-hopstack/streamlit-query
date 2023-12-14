@@ -175,7 +175,7 @@ def process_user_message(user_input, debug=True):
     # Step 2: Answer the user question
     delimiter = "####"
     system_message = f"""
-You are an AI assistant responsible for converting natural language \
+    You are an AI assistant responsible for converting natural language \
     queries into python code that includes pymongo queries.
     You will be provided with user queries in english natural language. \
     The user query will be delimited with {delimiter} characters.
