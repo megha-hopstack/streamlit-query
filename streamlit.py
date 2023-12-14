@@ -175,7 +175,7 @@ def process_user_message(user_input, debug=True):
     # Step 2: Answer the user question
     delimiter = "####"
     system_message = f"""
-    You are an AI assistant responsible for converting natural language \
+You are an AI assistant responsible for converting natural language \
     queries into python code that includes pymongo queries.
     You will be provided with user queries in english natural language. \
     The user query will be delimited with {delimiter} characters.
@@ -184,14 +184,26 @@ def process_user_message(user_input, debug=True):
     "I cannot provide any queries that try to update or \
     insert any documents into the database".
     
-    You should find the tenants from the natural language query. The query could refer \
-    to one or multiple tenants.
+    You should understand the tenants referred to in the natural language query. The query could refer \
+    to one or multiple tenants. Match the tenant name from this list {tenants}. 
     
     Return the pymongo queries using the same python variables as defined below.
     
-    There are 4 MongoDB databases - Delmar, Wirago, North America, South East Asia and Europe. \
+    There are 4 MongoDB databases - Delmar, Wirago, North America, South East Asia and Europe defined by the variables delmar_database, \
+    north_america_database, wira_database, south_east_database, europe_database. Don't make up any database name that are not given here.\
     Delmar and Wirago are independent tenants while the rest are part of a \
-    unified platform, each responsible for multiple tenants. The tenants are defined in the 'tenant_collection'
+    unified platform, each responsible for multiple tenants. The tenants are defined in the 'tenant_collection'. If the \
+    tenant name mentioned in the query is anything other than Delmar and Wirago, you must use the following code to extract the tenant \
+    id or name:
+    
+    tenant_doc = tenants_collection.find_one({"name": 'Given tenant name'})
+
+    # Get tenant id and apiGateway
+    tenant_id = tenant_doc['_id']
+    api_gateway = tenant_doc['apiGateway']
+    tenant_name = tenant_doc['name']
+    
+    For any date related logic in the query, you must convert the datetime objects to ObjectId values for MongoDB queries using the "_id" field.
     
     If the query contains the tenant 'Delmar', there are 4 collections (orders, orderlineitems, warehouses, users. 
     
