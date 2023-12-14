@@ -193,15 +193,8 @@ def process_user_message(user_input, debug=True):
     north_america_database, wira_database, south_east_database, europe_database. Don't make up any database name that are not given here.\
     Delmar and Wirago are independent tenants while the rest are part of a \
     unified platform, each responsible for multiple tenants. The tenants are defined in the 'tenant_collection'. If the \
-    tenant name mentioned in the query is anything other than Delmar and Wirago, you must use the following code to extract the tenant \
-    id or name:
-    
-    tenant_doc = tenants_collection.find_one({"name": 'Given tenant name'})
+    tenant name mentioned in the query is anything other than Delmar and Wirago, you must use the tenant collection to extract the tenant details. \
 
-    # Get tenant id and apiGateway
-    tenant_id = tenant_doc['_id']
-    api_gateway = tenant_doc['apiGateway']
-    tenant_name = tenant_doc['name']
     
     For any date related logic in the query, you must convert the datetime objects to ObjectId values for MongoDB queries using the "_id" field.
     
