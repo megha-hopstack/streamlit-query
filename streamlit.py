@@ -535,6 +535,44 @@ def process_user_message(user_input, debug=True):
 
     print(f"Total number of orders completed yesterday across all tenants: {total_completed_orders}")
     """
+    few_shot_user_10 = """Which is the highest selling sku for Delmar in 2023?"""
+    few_shot_assistant_10 = """
+    # Set the start and end dates for the year 2023
+    start_date = datetime(2023, 1, 1)
+    end_date = datetime(2023, 12, 31)
+    
+    # Convert the datetime objects to ObjectId values for MongoDB queries
+    start_oid = ObjectId.from_datetime(start_date)
+    end_oid = ObjectId.from_datetime(end_date)
+    
+    # Aggregate the quantities of SKUs sold in 2023
+    aggregation_result = delmar_database.orderlineitems.aggregate([
+        {
+            "$match": {
+                "_id": {"$gte": start_oid, "$lt": end_oid}
+            }
+        },
+        {
+            "$group": {
+                "_id": "$sku",
+                "total_quantity": {"$sum": "$quantity"}
+            }
+        },
+        {
+            "$sort": {
+                "total_quantity": -1
+            }
+        },
+        {
+            "$limit": 1
+        }
+    ])
+    
+    # Extract the highest selling SKU from the aggregation result
+    highest_selling_sku = next(aggregation_result, {}).get("_id", "")
+    
+    print(f"The highest selling SKU for Delmar in 2023 is: {highest_selling_sku}")
+    """
 
     messages =  [  
     {'role':'system', 'content': system_message},    
@@ -556,6 +594,8 @@ def process_user_message(user_input, debug=True):
     {'role':'assistant', 'content': few_shot_assistant_8 },
     {'role':'user', 'content': f"{delimiter}{few_shot_user_9}{delimiter}"},  
     {'role':'assistant', 'content': few_shot_assistant_9},
+    {'role':'user', 'content': f"{delimiter}{few_shot_user_10}{delimiter}"},  
+    {'role':'assistant', 'content': few_shot_assistant_10},
     {'role':'user', 'content': f"{delimiter}{user_input}{delimiter}"},  
     ] 
 
