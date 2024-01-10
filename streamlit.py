@@ -22,6 +22,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.auth.transport.requests import Request
 import json
+import calendar
 
 logging.basicConfig(
     filename='app.log',  # Specify the log file name
@@ -135,11 +136,11 @@ for i in range(len(tenant_df)):
 def exec_response(response):
     lines = response.split('\n')
 
-    # Strip leading spaces from each line
-    lines = [line.lstrip() for line in lines]
+    # Remove the first four spaces from each line
+    shifted_lines = [line[4:] if line.startswith('    ') else line for line in lines]
 
-    # Join the lines back together with newline characters
-    code = '\n'.join(lines)
+    # Join the lines back together
+    code = '\n'.join(shifted_lines)
 
     # Capture the output of executing the code
     stdout = sys.stdout
@@ -190,7 +191,7 @@ def process_user_message(user_input, debug=True):
     Return the pymongo queries using the same python variables as defined below.
     
     There are 4 MongoDB databases - Delmar, Wirago, North America, South East Asia and Europe defined by the variables delmar_database, \
-    north_america_database, wira_database, south_east_database, europe_database. Don't make up any database name that are not given here.\
+    north_america_database, wira_database, south_east_database, europe_database. Do not make up any database name that are not given here.\
     Delmar and Wirago are independent tenants while the rest are part of a \
     unified platform, each responsible for multiple tenants. The tenants are defined in the 'tenant_collection'. If the \
     tenant name mentioned in the query is anything other than Delmar and Wirago, you must use the tenant collection to extract the tenant details. \
