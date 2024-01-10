@@ -273,7 +273,10 @@ def process_user_message(user_input, debug=True):
 
     # Extract the total quantity from the aggregation result
     total_quantity = next(aggregation_result, {}).get("total_quantity", 0)
-    print(total_quantity)"""
+    
+    print(f"The number of skus that were sold in the last month for wirago {total_quantity}")
+    
+    """
     
     few_shot_user_2 = """Which is the sku that has sold the most for Delmar?"""
     few_shot_assistant_2 = """ 
@@ -286,7 +289,9 @@ def process_user_message(user_input, debug=True):
     result = delmar_database.orderlineitems.aggregate(pipeline)
 
     most_sold_sku = next(result)["_id"]
-    print(most_sold_sku)"""
+    print(f"The sku that has sold the most for Delmar: {most_sold_sku}")
+    
+    """
     
     few_shot_user_3 = """Which is the tenant with the highest quantity of sales?"""
     few_shot_assistant_3 = """
@@ -357,7 +362,7 @@ def process_user_message(user_input, debug=True):
             "$lt": end_oid
         }
     })
-    print(completed_orders)
+    print(f"The number of orders successfully completed last month by Wira: {completed_orders}")
 
     """
     few_shot_user_5 = """How many orders were shipped to 'North Carolina' in the past six months by Delmar?"""
@@ -380,7 +385,8 @@ def process_user_message(user_input, debug=True):
             "$lte": end_oid
         }
     })
-    print(shipped_orders)
+    print(f"The number of orders shipped to 'North Carolina' in the past six months by Delmar: {shipped_orders}")
+
     """
     
     few_shot_user_6 = """How many orders were successfully completed in the past year by prime zero prep?"""
@@ -421,7 +427,7 @@ def process_user_message(user_input, debug=True):
         }
     })
 
-    print(completed_orders)
+    print(f"The number of orders successfully completed in the past year by prime zero prep: {completed orders}")
 
     """
     
@@ -459,7 +465,8 @@ def process_user_message(user_input, debug=True):
     for sku in skus_less_than_3_orders:
         sku_count += 1
 
-    print(sku_count)
+    print(f"The number of SKUs with less than 3 orders during their lifetime for Nawel: {sku_count}")
+
 
     """
     few_shot_user_8 = """How many tenants are there? List all the tenants"""
